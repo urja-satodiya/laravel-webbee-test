@@ -187,6 +187,21 @@ class EventsController extends BaseController
      */
 
     public function getFutureEventsWithWorkshops() {
-        throw new \Exception('implement in coding task 2');
+        $futureEventsWithWorkshops = [];
+        
+        $events = Event::select("events.*")
+            ->join('workshops', function ($join) {
+                $join->on('events.id', '=', 'workshops.event_id');
+            })
+            ->groupBy('event_id')
+            ->havingRaw('MIN(workshops.start) > "' . \Carbon\Carbon::now()->format("Y-m-d H:i:s") . '"')->get()->toArray();
+    
+        foreach ($events as $event) {
+            $workshopsForEvent = Workshop::where('event_id', $event['id'])->get()->toArray();
+            $event['workshops'] = $workshopsForEvent;
+            
+            $futureEventsWithWorkshops[] = $event;
+        }
+        return response()->json($futureEventsWithWorkshops);
     }
 }
